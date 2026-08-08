@@ -1,0 +1,56 @@
+name: CI/CD Build Workflow
+
+on:
+  push:
+    branches: [ "master", "Dev" ]
+  pull_request:
+    branches: [ "master", "Dev" ]
+
+jobs:
+  build:
+    name: Build and Package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant Execute Permission for Gradlew
+        run: chmod +x gradlew
+
+      - name: Verify Code Formatting (Spotless)
+        run: ./gradlew spotlessCheck
+
+      - name: Run JUnit Tests
+        run: ./gradlew test
+
+      - name: Build Fat Shadow JAR
+        run: ./gradlew shadowJar
+
+      - name: Locate Shadow JAR
+        id: locate-jar
+        run: |
+          JAR_PATH=$(find build/libs -name "fake-player-plugin-*-all.jar" | head -n 1)
+          if [ -z "$JAR_PATH" ]; then
+            echo "Error: shadowJar output not found!"
+            exit 1
+          fi
+          echo "jar-path=$JAR_PATH" >> $GITHUB_OUTPUT
+          echo "jar-name=$(basename $JAR_PATH)" >> $GITHUB_OUTPUT
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.locate-jar.outputs.jar-name }}
+          path: ${{ steps.locate-jar.outputs.jar-path }}
+          if-no-files-found: error
+          retention-days: 7
