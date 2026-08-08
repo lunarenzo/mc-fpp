@@ -1,6 +1,7 @@
 package me.bill.fakePlayerPlugin.util;
 
 import java.util.List;
+
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class AttributionManager {

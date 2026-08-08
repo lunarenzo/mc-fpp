@@ -56,7 +56,6 @@ import me.bill.fakePlayerPlugin.database.BotRecord;
 import me.bill.fakePlayerPlugin.database.DatabaseManager;
 import me.bill.fakePlayerPlugin.listener.PlayerJoinListener;
 import me.bill.fakePlayerPlugin.util.AttributeCompat;
-import me.bill.fakePlayerPlugin.util.AttributionManager;
 import me.bill.fakePlayerPlugin.util.BadwordFilter;
 import me.bill.fakePlayerPlugin.util.FppLogger;
 import me.bill.fakePlayerPlugin.util.FppScheduler;
@@ -209,8 +208,6 @@ public class FakePlayerManager {
     public FakePlayerManager(FakePlayerPlugin plugin) {
         this.plugin = plugin;
         FAKE_PLAYER_KEY = new NamespacedKey(plugin, "fake_player_name");
-
-
 
         long flushTicks = Math.max(20L, Config.dbLocationFlushInterval() * 20L);
         FppScheduler.runSyncRepeating(

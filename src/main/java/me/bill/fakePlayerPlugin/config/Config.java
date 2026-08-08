@@ -1331,8 +1331,6 @@ public final class Config {
         FppLogger.debug("NMS-DAMAGE", debugNmsDamage(), message);
     }
 
-
-
     public static void debugChat(String message) {
         FppLogger.debug("CHAT", debugChat(), message);
     }
