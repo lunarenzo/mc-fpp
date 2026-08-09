@@ -849,10 +849,20 @@ public class FakePlayerManager {
     }
 
     public int spawnUserBot(Location location, int count, Player spawner, boolean bypassMax) {
-        return spawnUserBot(location, count, spawner, bypassMax, BotType.AFK);
+        return spawnUserBot(location, count, spawner, bypassMax, BotType.AFK, false);
     }
 
     public int spawnUserBot(Location location, int count, Player spawner, boolean bypassMax, BotType botType) {
+        return spawnUserBot(location, count, spawner, bypassMax, botType, false);
+    }
+
+    public int spawnUserBot(
+            Location location,
+            int count,
+            Player spawner,
+            boolean bypassMax,
+            BotType botType,
+            boolean forceRandomName) {
         int maxBots = Config.maxBots();
         if (!bypassMax && maxBots > 0) {
             int available = maxBots - activePlayers.size();
@@ -863,39 +873,32 @@ public class FakePlayerManager {
         String spawnerName = spawner.getName();
         UUID spawnerUuid = spawner.getUniqueId();
 
-        int alreadyOwned = getBotsOwnedBy(spawnerUuid).size();
-
         List<FakePlayer> batch = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            UserBotName ubn = generateUserBotName(spawnerName, alreadyOwned + i);
-            UUID uuid = resolveUuid(ubn.internalName());
-            PlayerProfile profile = Bukkit.createProfile(uuid, ubn.internalName());
-            FakePlayer fp = new FakePlayer(uuid, ubn.internalName(), profile);
+            String name = generateName(forceRandomName);
+            if (name == null) break;
+
+            UUID uuid = resolveUuid(name);
+            PlayerProfile profile = Bukkit.createProfile(uuid, name);
+            FakePlayer fp = new FakePlayer(uuid, name, profile);
             fp.setBotType(botType);
 
             fp.setSkinName(spawnerName);
             applyDespawnSnapshotSkin(fp);
 
-            String cleanBotName = "bot" + (alreadyOwned + i + 1);
-            String rawUserName = Config.userBotNameFormat()
-                    .replace("{spawner}", spawnerName)
-                    .replace("{num}", String.valueOf(alreadyOwned + i + 1))
-                    .replace("{bot_name}", cleanBotName);
-
-            fp.setRawDisplayName(rawUserName);
-            String userDisplay = finalizeDisplayName(rawUserName, ubn.internalName());
-            fp.setDisplayName(userDisplay);
+            fp.setRawDisplayName(name);
+            fp.setDisplayName(name);
             fp.setSpawnLocation(location.clone());
             fp.setSpawnedBy(spawnerName, spawnerUuid);
             fp.setSpawnTick(System.currentTimeMillis());
             activePlayers.put(uuid, fp);
-            nameIndex.put(ubn.internalName().toLowerCase(), fp);
+            nameIndex.put(name.toLowerCase(), fp);
             batch.add(fp);
 
             if (db != null) {
                 BotRecord record = new BotRecord(
                         0,
-                        ubn.internalName(),
+                        name,
                         uuid,
                         spawnerName,
                         spawnerUuid,
@@ -911,7 +914,7 @@ public class FakePlayerManager {
                 fp.setDbRecord(record);
                 db.recordSpawn(
                         record,
-                        PlainTextComponentSerializer.plainText().serialize(TextUtil.colorize(ubn.displayName())));
+                        PlainTextComponentSerializer.plainText().serialize(TextUtil.colorize(name)));
                 persistActiveSkin(fp);
             }
         }

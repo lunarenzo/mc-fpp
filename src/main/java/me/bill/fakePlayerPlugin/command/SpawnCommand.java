@@ -220,7 +220,7 @@ public class SpawnCommand implements FppCommand {
             }
             count = Math.min(count, limit - alreadyOwned);
 
-            int result = manager.spawnUserBot(location, count, player, false, botType);
+            int result = manager.spawnUserBot(location, count, player, false, botType, forceRandomName);
             if (result == -1) {
                 int max = Config.maxBots();
                 sender.sendMessage(Lang.get("spawn-max-reached", "max", String.valueOf(max)));
