@@ -69,8 +69,11 @@ public class PlayerJoinListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onQuitEarly(PlayerQuitEvent event) {
-
         UUID uuid = event.getPlayer().getUniqueId();
+
+        if (manager.getByUuid(uuid) != null) {
+            ensurePvPManagerPresence(event.getPlayer());
+        }
 
         if (manager.hasSyntheticQuit(uuid)) {
             event.quitMessage(null);
@@ -290,6 +293,31 @@ public class PlayerJoinListener implements Listener {
             return stopping instanceof Boolean b && b;
         } catch (Throwable ignored) {
             return false;
+        }
+    }
+
+    private void ensurePvPManagerPresence(Player player) {
+        try {
+            org.bukkit.plugin.Plugin pvpManagerPlugin = Bukkit.getPluginManager().getPlugin("PvPManager");
+            if (pvpManagerPlugin != null && pvpManagerPlugin.isEnabled()) {
+                Class<?> pvpManagerClass = Class.forName("me.chancesd.pvpmanager.PvPManager");
+                java.lang.reflect.Method getInstanceMethod = pvpManagerClass.getMethod("getInstance");
+                Object pvpManagerInstance = getInstanceMethod.invoke(null);
+
+                java.lang.reflect.Method getPlayerManagerMethod = pvpManagerClass.getMethod("getPlayerManager");
+                Object playerManager = getPlayerManagerMethod.invoke(pvpManagerInstance);
+
+                Class<?> playerManagerClass = Class.forName("me.chancesd.pvpmanager.manager.PlayerManager");
+                java.lang.reflect.Method getUncheckedMethod = playerManagerClass.getMethod("getUnchecked", Player.class);
+                Object combatPlayer = getUncheckedMethod.invoke(playerManager, player);
+
+                if (combatPlayer == null) {
+                    java.lang.reflect.Method createPlayerMethod = playerManagerClass.getMethod("createPlayer", Player.class, boolean.class);
+                    createPlayerMethod.invoke(playerManager, player, true);
+                    Config.debug("Re-registered bot '" + player.getName() + "' in PvPManager to prevent logout NPE.");
+                }
+            }
+        } catch (Throwable ignored) {
         }
     }
 }
