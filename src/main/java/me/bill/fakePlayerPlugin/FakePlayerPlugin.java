@@ -78,7 +78,6 @@ import me.bill.fakePlayerPlugin.util.CompatibilityChecker;
 import me.bill.fakePlayerPlugin.util.ConfigMigrator;
 import me.bill.fakePlayerPlugin.util.ConfigValidator;
 import me.bill.fakePlayerPlugin.util.FppLogger;
-import me.bill.fakePlayerPlugin.util.FppMetrics;
 import me.bill.fakePlayerPlugin.util.FppPlaceholderExpansion;
 import me.bill.fakePlayerPlugin.util.FppScheduler;
 import me.bill.fakePlayerPlugin.util.HeartbeatSender;
@@ -100,7 +99,6 @@ public final class FakePlayerPlugin extends JavaPlugin {
     private ChunkLoader chunkLoader;
     private DatabaseManager databaseManager;
     private BotPersistence botPersistence;
-    private FppMetrics fppMetrics;
     private VelocityChannel velocityChannel;
     private BotChatController botChatAI;
     private RemoteBotCache remoteBotCache;
@@ -410,17 +408,7 @@ public final class FakePlayerPlugin extends JavaPlugin {
         heartbeatSender = new HeartbeatSender(this, fakePlayerManager);
         heartbeatSender.start();
 
-        if (Config.metricsEnabled()) {
-            try {
-                fppMetrics = new FppMetrics();
-                fppMetrics.init(this);
-            } catch (Throwable t) {
-                fppMetrics = null;
-                FppLogger.warn("Metrics disabled because FastStats is unavailable: " + t.getMessage());
-            }
-        } else {
-            Config.debugStartup("Metrics disabled in config.yml - skipping FastStats init.");
-        }
+        Config.debugStartup("Metrics system is disabled - skipping FastStats init.");
 
         performanceMonitor = new PerformanceMonitor(this, fakePlayerManager);
         performanceMonitor.start();
@@ -503,7 +491,7 @@ public final class FakePlayerPlugin extends JavaPlugin {
         if (heartbeatSender != null) heartbeatSender.stop();
         if (networkHeartbeat != null) networkHeartbeat.stop();
 
-        if (fppMetrics != null) fppMetrics.shutdown();
+
         if (performanceMonitor != null) performanceMonitor.stop();
         if (profiler != null) profiler.stop();
 
@@ -644,9 +632,7 @@ public final class FakePlayerPlugin extends JavaPlugin {
         return extensionLoader;
     }
 
-    public FppMetrics getFppMetrics() {
-        return fppMetrics;
-    }
+
 
     public Component getUpdateNotification() {
         return updateNotificationMessage;
