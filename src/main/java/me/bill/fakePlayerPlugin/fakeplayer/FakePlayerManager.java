@@ -857,12 +857,7 @@ public class FakePlayerManager {
     }
 
     public int spawnUserBot(
-            Location location,
-            int count,
-            Player spawner,
-            boolean bypassMax,
-            BotType botType,
-            boolean forceRandomName) {
+            Location location, int count, Player spawner, boolean bypassMax, BotType botType, boolean forceRandomName) {
         int maxBots = Config.maxBots();
         if (!bypassMax && maxBots > 0) {
             int available = maxBots - activePlayers.size();
@@ -912,9 +907,7 @@ public class FakePlayerManager {
                         null,
                         null);
                 fp.setDbRecord(record);
-                db.recordSpawn(
-                        record,
-                        PlainTextComponentSerializer.plainText().serialize(TextUtil.colorize(name)));
+                db.recordSpawn(record, PlainTextComponentSerializer.plainText().serialize(TextUtil.colorize(name)));
                 persistActiveSkin(fp);
             }
         }
