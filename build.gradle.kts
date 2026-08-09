@@ -33,7 +33,6 @@ repositories {
 dependencies {
     paperweight.paperDevBundle("26.1.2.build.65-stable")
 
-
     compileOnly("net.luckperms:api:5.5")
     compileOnly("me.clip:placeholderapi:2.12.2")
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.12") {

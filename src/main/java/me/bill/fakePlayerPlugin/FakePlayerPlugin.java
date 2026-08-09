@@ -491,7 +491,6 @@ public final class FakePlayerPlugin extends JavaPlugin {
         if (heartbeatSender != null) heartbeatSender.stop();
         if (networkHeartbeat != null) networkHeartbeat.stop();
 
-
         if (performanceMonitor != null) performanceMonitor.stop();
         if (profiler != null) profiler.stop();
 
@@ -631,8 +630,6 @@ public final class FakePlayerPlugin extends JavaPlugin {
     public ExtensionLoader getExtensionLoader() {
         return extensionLoader;
     }
-
-
 
     public Component getUpdateNotification() {
         return updateNotificationMessage;
