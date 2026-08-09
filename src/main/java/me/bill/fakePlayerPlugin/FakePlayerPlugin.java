@@ -440,7 +440,7 @@ public final class FakePlayerPlugin extends JavaPlugin {
                 Bukkit.getPluginManager().getPlugin("LuckPerms") != null,
                 effectiveChunkLoading,
                 Config.maxBots(),
-                fppMetrics != null && fppMetrics.isActive(),
+                false,
                 configVersion,
                 backupCount,
                 startupMs);
