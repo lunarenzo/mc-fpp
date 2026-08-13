@@ -96,8 +96,8 @@ public final class CompatibilityChecker {
             return !isVersionAtLeast(version, "1.21.12");
         }
 
-        // New year-based format: 26.1.x
-        if (parts[0] == 26 && parts.length >= 2 && parts[1] == 1) {
+        // New year-based format: 26.1.x and 26.2.x
+        if (parts[0] == 26 && parts.length >= 2 && (parts[1] == 1 || parts[1] == 2)) {
             return true;
         }
 
