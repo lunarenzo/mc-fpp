@@ -1769,7 +1769,7 @@ public final class NmsPlayerSpawner {
     private static void prepareJoinCompatibility(Object conn, Object serverPlayer, UUID uuid, String name) {
         Player bukkitPlayer = resolveBukkitPlayer(serverPlayer);
         markFakePlayerMetadata(bukkitPlayer);
-        preLoadLuckPermsUser(uuid, name);
+        preLoadLuckPermsUser(bukkitPlayer, uuid, name);
         registerPacketEventsUser(conn, bukkitPlayer, uuid, name);
     }
 
@@ -1796,7 +1796,7 @@ public final class NmsPlayerSpawner {
         }
     }
 
-    private static void preLoadLuckPermsUser(UUID uuid, String name) {
+    private static void preLoadLuckPermsUser(Player player, UUID uuid, String name) {
         if (uuid == null) return;
         Plugin lpPlugin = Bukkit.getPluginManager().getPlugin("LuckPerms");
         if (lpPlugin == null || !lpPlugin.isEnabled()) return;
@@ -1818,11 +1818,11 @@ public final class NmsPlayerSpawner {
             }
             if (future == null) return;
 
-            // If already cached we are done.
             Method getNow = future.getClass().getMethod("getNow", Object.class);
             Object user = getNow.invoke(future, (Object) null);
             if (user != null) {
                 FppLogger.debug("NmsPlayerSpawner: LuckPerms user already cached for " + uuid);
+                if (player != null) injectLuckPermsPermissible(player, user, lpPlugin);
                 return;
             }
 
@@ -1834,6 +1834,9 @@ public final class NmsPlayerSpawner {
                     return;
                 }
                 FppLogger.debug("NmsPlayerSpawner: asynchronously pre-loaded LuckPerms user for " + uuid);
+                if (player != null && loadedUser != null) {
+                    FppScheduler.runSync(FakePlayerPlugin.getInstance(), () -> injectLuckPermsPermissible(player, loadedUser, lpPlugin));
+                }
             });
         } catch (Throwable t) {
             if (t instanceof java.lang.reflect.InvocationTargetException ite) {
@@ -1846,6 +1849,33 @@ public final class NmsPlayerSpawner {
             } else {
                 FppLogger.debug("NmsPlayerSpawner: LuckPerms pre-load skipped: " + t.getMessage());
             }
+        }
+    }
+
+    private static void injectLuckPermsPermissible(Player player, Object user, Plugin lpPlugin) {
+        if (player == null || !player.isOnline() || user == null || lpPlugin == null) return;
+        try {
+            ClassLoader loader = lpPlugin.getClass().getClassLoader();
+            Class<?> userClass = Class.forName("net.luckperms.api.model.user.User", false, loader);
+            Class<?> lpPluginClass = Class.forName("me.lucko.luckperms.bukkit.LPBukkitPlugin", false, loader);
+            Class<?> lpPermissibleClass = Class.forName("me.lucko.luckperms.bukkit.inject.permissible.LuckPermsPermissible", false, loader);
+
+            Constructor<?> ctor = lpPermissibleClass.getDeclaredConstructor(Player.class, userClass, lpPluginClass);
+            Object lpPermissible = ctor.newInstance(player, user, lpPlugin);
+
+            Class<?> injectorClass = Class.forName("me.lucko.luckperms.bukkit.inject.permissible.PermissibleInjector", false, loader);
+            Method injectMethod = injectorClass.getMethod("inject", Player.class, lpPermissibleClass, java.util.logging.Logger.class);
+            injectMethod.invoke(null, player, lpPermissible, lpPlugin.getLogger());
+
+            Method getContextManager = lpPlugin.getClass().getMethod("getContextManager");
+            Object contextManager = getContextManager.invoke(lpPlugin);
+            if (contextManager != null) {
+                Method signalMethod = contextManager.getClass().getMethod("signalContextUpdate", Player.class);
+                signalMethod.invoke(contextManager, player);
+            }
+            FppLogger.debug("NmsPlayerSpawner: injected LuckPermsPermissible into " + player.getName());
+        } catch (Throwable t) {
+            FppLogger.debug("NmsPlayerSpawner: LuckPermsPermissible injection skipped for " + player.getName() + ": " + t.getMessage());
         }
     }
 
