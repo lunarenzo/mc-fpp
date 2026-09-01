@@ -1835,7 +1835,9 @@ public final class NmsPlayerSpawner {
                 }
                 FppLogger.debug("NmsPlayerSpawner: asynchronously pre-loaded LuckPerms user for " + uuid);
                 if (player != null && loadedUser != null) {
-                    FppScheduler.runSync(FakePlayerPlugin.getInstance(), () -> injectLuckPermsPermissible(player, loadedUser, lpPlugin));
+                    FppScheduler.runSync(
+                            FakePlayerPlugin.getInstance(),
+                            () -> injectLuckPermsPermissible(player, loadedUser, lpPlugin));
                 }
             });
         } catch (Throwable t) {
@@ -1858,13 +1860,16 @@ public final class NmsPlayerSpawner {
             ClassLoader loader = lpPlugin.getClass().getClassLoader();
             Class<?> userClass = Class.forName("net.luckperms.api.model.user.User", false, loader);
             Class<?> lpPluginClass = Class.forName("me.lucko.luckperms.bukkit.LPBukkitPlugin", false, loader);
-            Class<?> lpPermissibleClass = Class.forName("me.lucko.luckperms.bukkit.inject.permissible.LuckPermsPermissible", false, loader);
+            Class<?> lpPermissibleClass =
+                    Class.forName("me.lucko.luckperms.bukkit.inject.permissible.LuckPermsPermissible", false, loader);
 
             Constructor<?> ctor = lpPermissibleClass.getDeclaredConstructor(Player.class, userClass, lpPluginClass);
             Object lpPermissible = ctor.newInstance(player, user, lpPlugin);
 
-            Class<?> injectorClass = Class.forName("me.lucko.luckperms.bukkit.inject.permissible.PermissibleInjector", false, loader);
-            Method injectMethod = injectorClass.getMethod("inject", Player.class, lpPermissibleClass, java.util.logging.Logger.class);
+            Class<?> injectorClass =
+                    Class.forName("me.lucko.luckperms.bukkit.inject.permissible.PermissibleInjector", false, loader);
+            Method injectMethod =
+                    injectorClass.getMethod("inject", Player.class, lpPermissibleClass, java.util.logging.Logger.class);
             injectMethod.invoke(null, player, lpPermissible, lpPlugin.getLogger());
 
             Method getContextManager = lpPlugin.getClass().getMethod("getContextManager");
@@ -1875,7 +1880,8 @@ public final class NmsPlayerSpawner {
             }
             FppLogger.debug("NmsPlayerSpawner: injected LuckPermsPermissible into " + player.getName());
         } catch (Throwable t) {
-            FppLogger.debug("NmsPlayerSpawner: LuckPermsPermissible injection skipped for " + player.getName() + ": " + t.getMessage());
+            FppLogger.debug("NmsPlayerSpawner: LuckPermsPermissible injection skipped for " + player.getName() + ": "
+                    + t.getMessage());
         }
     }
 
