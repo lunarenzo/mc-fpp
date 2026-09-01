@@ -54,18 +54,20 @@ public class PlayerJoinListener implements Listener {
 
         if (!isFake) return;
 
-        if (fp == null) {
-            event.joinMessage(null);
-        } else if (manager.suppressBodyTransitionMessage(fp.getUuid())) {
-            event.joinMessage(null);
-        } else if (manager.isRenaming(fp.getUuid())) {
-            event.joinMessage(null);
-        } else if (fp.isRespawning() || manager.isBodyTransitioning(fp.getUuid())) {
-            event.joinMessage(null);
+        if (fp != null) {
+            if (manager.suppressBodyTransitionMessage(fp.getUuid())) {
+                event.joinMessage(null);
+            } else if (manager.isRenaming(fp.getUuid())) {
+                event.joinMessage(null);
+            } else if (fp.isRespawning() || manager.isBodyTransitioning(fp.getUuid())) {
+                event.joinMessage(null);
+            } else if (!Config.joinMessage()) {
+                event.joinMessage(null);
+            } else {
+                event.joinMessage(BotBroadcast.joinComponent(fp));
+            }
         } else if (!Config.joinMessage()) {
             event.joinMessage(null);
-        } else {
-            event.joinMessage(BotBroadcast.joinComponent(fp));
         }
 
         if (event.getPlayer().getFirstPlayed() != 0L) {

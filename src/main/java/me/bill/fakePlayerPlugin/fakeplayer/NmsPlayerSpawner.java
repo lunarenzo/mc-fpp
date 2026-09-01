@@ -1885,6 +1885,15 @@ public final class NmsPlayerSpawner {
                     injectorClass.getMethod("inject", Player.class, lpPermissibleClass, java.util.logging.Logger.class);
             injectMethod.invoke(null, player, lpPermissible, lpPlugin.getLogger());
 
+            try {
+                Method getCachedDataMethod = user.getClass().getMethod("getCachedData");
+                Object cachedData = getCachedDataMethod.invoke(user);
+                if (cachedData != null) {
+                    Method invalidateMethod = cachedData.getClass().getMethod("invalidate");
+                    invalidateMethod.invoke(cachedData);
+                }
+            } catch (Throwable ignored) {}
+
             Method getContextManager = lpPlugin.getClass().getMethod("getContextManager");
             Object contextManager = getContextManager.invoke(lpPlugin);
             if (contextManager != null) {
