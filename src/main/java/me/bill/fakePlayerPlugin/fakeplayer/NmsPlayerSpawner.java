@@ -3,6 +3,7 @@ package me.bill.fakePlayerPlugin.fakeplayer;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.InetAddress;
@@ -18,7 +19,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -1893,8 +1896,8 @@ public final class NmsPlayerSpawner {
                 return;
             }
 
-            Method whenComplete = future.getClass().getMethod("whenComplete", java.util.function.BiConsumer.class);
-            whenComplete.invoke(future, (java.util.function.BiConsumer<Object, Throwable>) (loadedUser, error) -> {
+            Method whenComplete = future.getClass().getMethod("whenComplete", BiConsumer.class);
+            whenComplete.invoke(future, (BiConsumer<Object, Throwable>) (loadedUser, error) -> {
                 if (error != null) {
                     FppLogger.debug("NmsPlayerSpawner: async LuckPerms pre-load failed for " + uuid + ": "
                             + error.getClass().getSimpleName());
@@ -1908,7 +1911,7 @@ public final class NmsPlayerSpawner {
                 }
             });
         } catch (Throwable t) {
-            if (t instanceof java.lang.reflect.InvocationTargetException ite) {
+            if (t instanceof InvocationTargetException ite) {
                 Throwable cause = ite.getCause();
                 if (cause instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
@@ -1936,7 +1939,7 @@ public final class NmsPlayerSpawner {
             Class<?> injectorClass =
                     Class.forName("me.lucko.luckperms.bukkit.inject.permissible.PermissibleInjector", false, loader);
             Method injectMethod =
-                    injectorClass.getMethod("inject", Player.class, lpPermissibleClass, java.util.logging.Logger.class);
+                    injectorClass.getMethod("inject", Player.class, lpPermissibleClass, Logger.class);
             injectMethod.invoke(null, player, lpPermissible, lpPlugin.getLogger());
 
             try {
