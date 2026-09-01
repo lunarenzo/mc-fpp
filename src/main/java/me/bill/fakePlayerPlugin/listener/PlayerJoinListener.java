@@ -79,7 +79,7 @@ public class PlayerJoinListener implements Listener {
 
         if (isFirstJoin && Config.joinMessage()) {
             Player p = event.getPlayer();
-            FppScheduler.runSyncDelayed(plugin, () -> triggerEssentialsNewbieWelcome(p), 2L);
+            FppScheduler.runSyncLater(plugin, () -> triggerEssentialsNewbieWelcome(p), 2L);
         }
     }
 
