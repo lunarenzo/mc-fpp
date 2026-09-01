@@ -1806,18 +1806,23 @@ public final class NmsPlayerSpawner {
 
     private static void dispatchBukkitLoginLifecycleEvents(Player bukkitPlayer, UUID uuid, String name) {
         if (bukkitPlayer == null || uuid == null || name == null) return;
+        InetAddress address = generateRandomPublicIp(uuid);
+        FppScheduler.runAsync(
+                FakePlayerPlugin.getInstance(),
+                () -> {
+                    try {
+                        AsyncPlayerPreLoginEvent asyncEvent = new AsyncPlayerPreLoginEvent(name, address, uuid);
+                        Bukkit.getPluginManager().callEvent(asyncEvent);
+                    } catch (Throwable t) {
+                        FppLogger.debug("NmsPlayerSpawner: AsyncPlayerPreLoginEvent skipped for " + name + ": " + t.getMessage());
+                    }
+                });
         try {
-            InetAddress address = generateRandomPublicIp(uuid);
-            AsyncPlayerPreLoginEvent asyncEvent = new AsyncPlayerPreLoginEvent(name, address, uuid);
-            Bukkit.getPluginManager().callEvent(asyncEvent);
-
             PlayerLoginEvent loginEvent = new PlayerLoginEvent(bukkitPlayer, address.getHostAddress(), address);
             Bukkit.getPluginManager().callEvent(loginEvent);
-            FppLogger.debug("NmsPlayerSpawner: dispatched AsyncPlayerPreLoginEvent & PlayerLoginEvent for " + name
-                    + " (" + address.getHostAddress() + ")");
+            FppLogger.debug("NmsPlayerSpawner: dispatched PlayerLoginEvent for " + name + " (" + address.getHostAddress() + ")");
         } catch (Throwable t) {
-            FppLogger.debug(
-                    "NmsPlayerSpawner: login lifecycle event dispatch skipped for " + name + ": " + t.getMessage());
+            FppLogger.debug("NmsPlayerSpawner: PlayerLoginEvent skipped for " + name + ": " + t.getMessage());
         }
     }
 
@@ -1911,12 +1916,22 @@ public final class NmsPlayerSpawner {
         if (player == null || user == null || lpPlugin == null) return;
         try {
             ClassLoader loader = lpPlugin.getClass().getClassLoader();
-            Class<?> userClass = Class.forName("net.luckperms.api.model.user.User", false, loader);
-            Class<?> lpPluginClass = Class.forName("me.lucko.luckperms.bukkit.LPBukkitPlugin", false, loader);
             Class<?> lpPermissibleClass =
                     Class.forName("me.lucko.luckperms.bukkit.inject.permissible.LuckPermsPermissible", false, loader);
 
-            Constructor<?> ctor = lpPermissibleClass.getDeclaredConstructor(Player.class, userClass, lpPluginClass);
+            Constructor<?> ctor = null;
+            for (Constructor<?> c : lpPermissibleClass.getDeclaredConstructors()) {
+                if (c.getParameterCount() == 3) {
+                    c.setAccessible(true);
+                    ctor = c;
+                    break;
+                }
+            }
+            if (ctor == null) {
+                FppLogger.debug("NmsPlayerSpawner: LuckPermsPermissible 3-arg constructor not found");
+                return;
+            }
+
             Object lpPermissible = ctor.newInstance(player, user, lpPlugin);
 
             Class<?> injectorClass =
