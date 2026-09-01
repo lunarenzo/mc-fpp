@@ -507,6 +507,7 @@ public final class NmsPlayerSpawner {
                 forceAllSkinParts(result);
                 firstTickSet.add(uuid);
                 refreshAfterTeleport(result);
+                preLoadLuckPermsUser(result, uuid, name);
                 FppLogger.debug("NmsPlayerSpawner: spawned " + name + " (" + uuid + ")");
                 return result;
             }
@@ -1878,7 +1879,7 @@ public final class NmsPlayerSpawner {
     }
 
     private static void injectLuckPermsPermissible(Player player, Object user, Plugin lpPlugin) {
-        if (player == null || !player.isOnline() || user == null || lpPlugin == null) return;
+        if (player == null || user == null || lpPlugin == null) return;
         try {
             ClassLoader loader = lpPlugin.getClass().getClassLoader();
             Class<?> userClass = Class.forName("net.luckperms.api.model.user.User", false, loader);
