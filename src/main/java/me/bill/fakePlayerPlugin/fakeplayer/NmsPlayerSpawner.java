@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 import org.bukkit.Bukkit;
@@ -1780,16 +1781,32 @@ public final class NmsPlayerSpawner {
         registerPacketEventsUser(conn, bukkitPlayer, uuid, name);
     }
 
+    private static InetAddress generateRandomPublicIp(UUID uuid) {
+        long most = uuid != null ? uuid.getMostSignificantBits() : ThreadLocalRandom.current().nextLong();
+        int octet1 = (int) (Math.abs(most % 213) + 1);
+        if (octet1 == 10 || octet1 == 100 || octet1 == 127 || octet1 == 169 || octet1 == 172 || octet1 == 192) {
+            octet1 = 185;
+        }
+        int octet2 = (int) (Math.abs((most >> 8) % 256));
+        int octet3 = (int) (Math.abs((most >> 16) % 256));
+        int octet4 = (int) (Math.abs((most >> 24) % 254) + 1);
+        try {
+            return InetAddress.getByAddress(new byte[] {(byte) octet1, (byte) octet2, (byte) octet3, (byte) octet4});
+        } catch (Throwable ignored) {
+            return InetAddress.getLoopbackAddress();
+        }
+    }
+
     private static void dispatchBukkitLoginLifecycleEvents(Player bukkitPlayer, UUID uuid, String name) {
         if (bukkitPlayer == null || uuid == null || name == null) return;
         try {
-            InetAddress address = InetAddress.getLoopbackAddress();
+            InetAddress address = generateRandomPublicIp(uuid);
             AsyncPlayerPreLoginEvent asyncEvent = new AsyncPlayerPreLoginEvent(name, address, uuid);
             Bukkit.getPluginManager().callEvent(asyncEvent);
 
-            PlayerLoginEvent loginEvent = new PlayerLoginEvent(bukkitPlayer, "localhost", address);
+            PlayerLoginEvent loginEvent = new PlayerLoginEvent(bukkitPlayer, address.getHostAddress(), address);
             Bukkit.getPluginManager().callEvent(loginEvent);
-            FppLogger.debug("NmsPlayerSpawner: dispatched AsyncPlayerPreLoginEvent & PlayerLoginEvent for " + name);
+            FppLogger.debug("NmsPlayerSpawner: dispatched AsyncPlayerPreLoginEvent & PlayerLoginEvent for " + name + " (" + address.getHostAddress() + ")");
         } catch (Throwable t) {
             FppLogger.debug(
                     "NmsPlayerSpawner: login lifecycle event dispatch skipped for " + name + ": " + t.getMessage());
