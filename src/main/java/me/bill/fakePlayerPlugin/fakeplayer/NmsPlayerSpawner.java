@@ -1816,7 +1816,8 @@ public final class NmsPlayerSpawner {
                     Method registerUsage = houseKeeper.getClass().getMethod("registerUsage", UUID.class);
                     registerUsage.invoke(houseKeeper, uuid);
                 }
-            } catch (Throwable ignored) {}
+            } catch (Throwable ignored) {
+            }
 
             Object future;
             if (name != null && !name.isBlank()) {

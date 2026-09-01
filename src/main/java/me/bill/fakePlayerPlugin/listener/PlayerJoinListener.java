@@ -70,7 +70,8 @@ public class PlayerJoinListener implements Listener {
             event.joinMessage(null);
         }
 
-        boolean isFirstJoin = !event.getPlayer().hasPlayedBefore() && (event.getPlayer().getFirstPlayed() == 0L);
+        boolean isFirstJoin =
+                !event.getPlayer().hasPlayedBefore() && (event.getPlayer().getFirstPlayed() == 0L);
 
         if (event.getPlayer().getFirstPlayed() != 0L) {
             forceHasPlayedBefore(event.getPlayer());
@@ -359,13 +360,16 @@ public class PlayerJoinListener implements Listener {
             java.lang.reflect.Method getSettingsMethod = essPlugin.getClass().getMethod("getSettings");
             Object settings = getSettingsMethod.invoke(essPlugin);
             if (settings != null) {
-                java.lang.reflect.Method getAnnounceNewPlayers = settings.getClass().getMethod("getAnnounceNewPlayers");
+                java.lang.reflect.Method getAnnounceNewPlayers =
+                        settings.getClass().getMethod("getAnnounceNewPlayers");
                 boolean announce = (boolean) getAnnounceNewPlayers.invoke(settings);
                 if (announce) {
-                    java.lang.reflect.Method getFormatMethod = settings.getClass().getMethod("getAnnounceNewPlayerFormat");
+                    java.lang.reflect.Method getFormatMethod =
+                            settings.getClass().getMethod("getAnnounceNewPlayerFormat");
                     Object formatText = getFormatMethod.invoke(settings);
                     if (formatText != null) {
-                        java.lang.reflect.Method getUserMethod = essPlugin.getClass().getMethod("getUser", Player.class);
+                        java.lang.reflect.Method getUserMethod =
+                                essPlugin.getClass().getMethod("getUser", Player.class);
                         Object essUser = getUserMethod.invoke(essPlugin, player);
                         if (essUser != null) {
                             Class<?> replacerClass = Class.forName("com.earth2me.essentials.KeywordReplacer");
@@ -373,13 +377,20 @@ public class PlayerJoinListener implements Listener {
                                     formatText.getClass().getInterfaces()[0],
                                     Class.forName("com.earth2me.essentials.CommandSource"),
                                     essPlugin.getClass());
-                            java.lang.reflect.Method getSourceMethod = essUser.getClass().getMethod("getSource");
+                            java.lang.reflect.Method getSourceMethod =
+                                    essUser.getClass().getMethod("getSource");
                             Object source = getSourceMethod.invoke(essUser);
                             Object replacer = ctor.newInstance(formatText, source, essPlugin);
-                            java.lang.reflect.Method getLinesMethod = replacer.getClass().getMethod("getLines");
+                            java.lang.reflect.Method getLinesMethod =
+                                    replacer.getClass().getMethod("getLines");
                             @SuppressWarnings("unchecked")
                             Iterable<String> lines = (Iterable<String>) getLinesMethod.invoke(replacer);
-                            java.lang.reflect.Method broadcastMethod = essPlugin.getClass().getMethod("broadcastMessage", essUser.getClass().getInterfaces()[0], String.class);
+                            java.lang.reflect.Method broadcastMethod = essPlugin
+                                    .getClass()
+                                    .getMethod(
+                                            "broadcastMessage",
+                                            essUser.getClass().getInterfaces()[0],
+                                            String.class);
                             for (String line : lines) {
                                 broadcastMethod.invoke(essPlugin, essUser, line);
                             }
