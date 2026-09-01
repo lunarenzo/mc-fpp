@@ -1812,13 +1812,15 @@ public final class NmsPlayerSpawner {
             Object future;
             if (name != null && !name.isBlank()) {
                 try {
-                    Method savePlayerDataMethod = userManager.getClass().getMethod("savePlayerData", UUID.class, String.class);
+                    Method savePlayerDataMethod =
+                            userManager.getClass().getMethod("savePlayerData", UUID.class, String.class);
                     Object saveFuture = savePlayerDataMethod.invoke(userManager, uuid, name);
                     if (saveFuture instanceof java.util.concurrent.CompletableFuture<?> cf) {
                         cf.join();
                     }
                 } catch (Throwable t) {
-                    FppLogger.debug("NmsPlayerSpawner: LuckPerms savePlayerData skipped for " + name + ": " + t.getMessage());
+                    FppLogger.debug(
+                            "NmsPlayerSpawner: LuckPerms savePlayerData skipped for " + name + ": " + t.getMessage());
                 }
 
                 Method loadUserWithName = userManager.getClass().getMethod("loadUser", UUID.class, String.class);
