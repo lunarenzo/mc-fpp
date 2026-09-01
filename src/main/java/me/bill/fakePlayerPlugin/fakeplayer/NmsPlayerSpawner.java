@@ -40,6 +40,7 @@ import me.bill.fakePlayerPlugin.config.Config;
 import me.bill.fakePlayerPlugin.fakeplayer.network.FakeConnection;
 import me.bill.fakePlayerPlugin.fakeplayer.network.FakeServerGamePacketListenerImpl;
 import me.bill.fakePlayerPlugin.util.FppLogger;
+import me.bill.fakePlayerPlugin.util.FppScheduler;
 
 import net.kyori.adventure.text.Component;
 import net.minecraft.core.BlockPos;
