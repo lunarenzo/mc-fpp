@@ -1807,20 +1807,20 @@ public final class NmsPlayerSpawner {
     private static void dispatchBukkitLoginLifecycleEvents(Player bukkitPlayer, UUID uuid, String name) {
         if (bukkitPlayer == null || uuid == null || name == null) return;
         InetAddress address = generateRandomPublicIp(uuid);
-        FppScheduler.runAsync(
-                FakePlayerPlugin.getInstance(),
-                () -> {
-                    try {
-                        AsyncPlayerPreLoginEvent asyncEvent = new AsyncPlayerPreLoginEvent(name, address, uuid);
-                        Bukkit.getPluginManager().callEvent(asyncEvent);
-                    } catch (Throwable t) {
-                        FppLogger.debug("NmsPlayerSpawner: AsyncPlayerPreLoginEvent skipped for " + name + ": " + t.getMessage());
-                    }
-                });
+        FppScheduler.runAsync(FakePlayerPlugin.getInstance(), () -> {
+            try {
+                AsyncPlayerPreLoginEvent asyncEvent = new AsyncPlayerPreLoginEvent(name, address, uuid);
+                Bukkit.getPluginManager().callEvent(asyncEvent);
+            } catch (Throwable t) {
+                FppLogger.debug(
+                        "NmsPlayerSpawner: AsyncPlayerPreLoginEvent skipped for " + name + ": " + t.getMessage());
+            }
+        });
         try {
             PlayerLoginEvent loginEvent = new PlayerLoginEvent(bukkitPlayer, address.getHostAddress(), address);
             Bukkit.getPluginManager().callEvent(loginEvent);
-            FppLogger.debug("NmsPlayerSpawner: dispatched PlayerLoginEvent for " + name + " (" + address.getHostAddress() + ")");
+            FppLogger.debug("NmsPlayerSpawner: dispatched PlayerLoginEvent for " + name + " ("
+                    + address.getHostAddress() + ")");
         } catch (Throwable t) {
             FppLogger.debug("NmsPlayerSpawner: PlayerLoginEvent skipped for " + name + ": " + t.getMessage());
         }
