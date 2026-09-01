@@ -17,6 +17,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
@@ -1886,30 +1887,13 @@ public final class NmsPlayerSpawner {
                 Method loadUserUuidOnly = userManager.getClass().getMethod("loadUser", UUID.class);
                 future = loadUserUuidOnly.invoke(userManager, uuid);
             }
-            if (future == null) return;
-
-            Method getNow = future.getClass().getMethod("getNow", Object.class);
-            Object user = getNow.invoke(future, (Object) null);
-            if (user != null) {
-                FppLogger.debug("NmsPlayerSpawner: LuckPerms user already cached for " + uuid);
-                if (player != null) injectLuckPermsPermissible(player, user, lpPlugin);
-                return;
+            if (future instanceof CompletableFuture<?> cf) {
+                Object user = cf.join();
+                if (user != null && player != null) {
+                    injectLuckPermsPermissible(player, user, lpPlugin);
+                    FppLogger.debug("NmsPlayerSpawner: LuckPerms user loaded and injected synchronously for " + uuid);
+                }
             }
-
-            Method whenComplete = future.getClass().getMethod("whenComplete", BiConsumer.class);
-            whenComplete.invoke(future, (BiConsumer<Object, Throwable>) (loadedUser, error) -> {
-                if (error != null) {
-                    FppLogger.debug("NmsPlayerSpawner: async LuckPerms pre-load failed for " + uuid + ": "
-                            + error.getClass().getSimpleName());
-                    return;
-                }
-                FppLogger.debug("NmsPlayerSpawner: asynchronously pre-loaded LuckPerms user for " + uuid);
-                if (player != null && loadedUser != null) {
-                    FppScheduler.runSync(
-                            FakePlayerPlugin.getInstance(),
-                            () -> injectLuckPermsPermissible(player, loadedUser, lpPlugin));
-                }
-            });
         } catch (Throwable t) {
             if (t instanceof InvocationTargetException ite) {
                 Throwable cause = ite.getCause();
