@@ -1938,8 +1938,7 @@ public final class NmsPlayerSpawner {
 
             Class<?> injectorClass =
                     Class.forName("me.lucko.luckperms.bukkit.inject.permissible.PermissibleInjector", false, loader);
-            Method injectMethod =
-                    injectorClass.getMethod("inject", Player.class, lpPermissibleClass, Logger.class);
+            Method injectMethod = injectorClass.getMethod("inject", Player.class, lpPermissibleClass, Logger.class);
             injectMethod.invoke(null, player, lpPermissible, lpPlugin.getLogger());
 
             try {
