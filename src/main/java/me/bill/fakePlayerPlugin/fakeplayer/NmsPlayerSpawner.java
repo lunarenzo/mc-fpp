@@ -1891,10 +1891,28 @@ public final class NmsPlayerSpawner {
                 Method signalMethod = contextManager.getClass().getMethod("signalContextUpdate", Player.class);
                 signalMethod.invoke(contextManager, player);
             }
+            invalidateEssentialsPermissionCache(player.getUniqueId());
             FppLogger.debug("NmsPlayerSpawner: injected LuckPermsPermissible into " + player.getName());
         } catch (Throwable t) {
             FppLogger.debug("NmsPlayerSpawner: LuckPermsPermissible injection skipped for " + player.getName() + ": "
                     + t.getMessage());
+        }
+    }
+
+    private static void invalidateEssentialsPermissionCache(UUID uuid) {
+        if (uuid == null) return;
+        Plugin essPlugin = Bukkit.getPluginManager().getPlugin("Essentials");
+        if (essPlugin == null || !essPlugin.isEnabled()) return;
+        try {
+            Method getPermsHandler = essPlugin.getClass().getMethod("getPermissionsHandler");
+            Object permsHandler = getPermsHandler.invoke(essPlugin);
+            if (permsHandler != null) {
+                Method invalidateMethod = permsHandler.getClass().getMethod("invalidatePermissionCache", UUID.class);
+                invalidateMethod.invoke(permsHandler, uuid);
+                FppLogger.debug("NmsPlayerSpawner: invalidated Essentials permission cache for " + uuid);
+            }
+        } catch (Throwable t) {
+            FppLogger.debug("NmsPlayerSpawner: Essentials permission cache invalidation skipped: " + t.getMessage());
         }
     }
 
