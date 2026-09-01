@@ -1782,7 +1782,9 @@ public final class NmsPlayerSpawner {
     }
 
     private static InetAddress generateRandomPublicIp(UUID uuid) {
-        long most = uuid != null ? uuid.getMostSignificantBits() : ThreadLocalRandom.current().nextLong();
+        long most = uuid != null
+                ? uuid.getMostSignificantBits()
+                : ThreadLocalRandom.current().nextLong();
         int octet1 = (int) (Math.abs(most % 213) + 1);
         if (octet1 == 10 || octet1 == 100 || octet1 == 127 || octet1 == 169 || octet1 == 172 || octet1 == 192) {
             octet1 = 185;
@@ -1806,7 +1808,8 @@ public final class NmsPlayerSpawner {
 
             PlayerLoginEvent loginEvent = new PlayerLoginEvent(bukkitPlayer, address.getHostAddress(), address);
             Bukkit.getPluginManager().callEvent(loginEvent);
-            FppLogger.debug("NmsPlayerSpawner: dispatched AsyncPlayerPreLoginEvent & PlayerLoginEvent for " + name + " (" + address.getHostAddress() + ")");
+            FppLogger.debug("NmsPlayerSpawner: dispatched AsyncPlayerPreLoginEvent & PlayerLoginEvent for " + name
+                    + " (" + address.getHostAddress() + ")");
         } catch (Throwable t) {
             FppLogger.debug(
                     "NmsPlayerSpawner: login lifecycle event dispatch skipped for " + name + ": " + t.getMessage());
