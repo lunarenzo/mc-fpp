@@ -54,8 +54,6 @@ public class PlayerJoinListener implements Listener {
 
         if (!isFake) return;
 
-        markEssentialsUserAsNpc(event.getPlayer());
-
         if (fp == null) {
             event.joinMessage(null);
         } else if (manager.suppressBodyTransitionMessage(fp.getUuid())) {
@@ -341,21 +339,6 @@ public class PlayerJoinListener implements Listener {
                             org.bukkit.persistence.PersistentDataType.BYTE);
         } catch (Throwable t) {
             return false;
-        }
-    }
-
-    private static void markEssentialsUserAsNpc(Player player) {
-        if (player == null) return;
-        org.bukkit.plugin.Plugin essPlugin = Bukkit.getPluginManager().getPlugin("Essentials");
-        if (essPlugin == null || !essPlugin.isEnabled()) return;
-        try {
-            java.lang.reflect.Method getUserMethod = essPlugin.getClass().getMethod("getUser", Player.class);
-            Object essUser = getUserMethod.invoke(essPlugin, player);
-            if (essUser != null) {
-                java.lang.reflect.Method setNpcMethod = essUser.getClass().getMethod("setNPC", boolean.class);
-                setNpcMethod.invoke(essUser, true);
-            }
-        } catch (Throwable ignored) {
         }
     }
 }
