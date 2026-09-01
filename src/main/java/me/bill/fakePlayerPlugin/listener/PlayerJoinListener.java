@@ -43,14 +43,22 @@ public class PlayerJoinListener implements Listener {
 
         UUID uuid = event.getPlayer().getUniqueId();
         Location requestedSpawn = NmsPlayerSpawner.consumePendingSpawnLocation(uuid);
+        boolean isPendingSpawn = (requestedSpawn != null);
+
         if (requestedSpawn != null && requestedSpawn.getWorld() != null) {
             NmsPlayerSpawner.correctPendingSpawnLocation(event.getPlayer(), requestedSpawn);
         }
 
         FakePlayer fp = manager.getByUuid(uuid);
-        if (fp == null) return;
+        boolean isFake = (fp != null) || isPendingSpawn || isFakePlayer(event.getPlayer());
 
-        if (manager.suppressBodyTransitionMessage(fp.getUuid())) {
+        if (!isFake) return;
+
+        markEssentialsUserAsNpc(event.getPlayer());
+
+        if (fp == null) {
+            event.joinMessage(null);
+        } else if (manager.suppressBodyTransitionMessage(fp.getUuid())) {
             event.joinMessage(null);
         } else if (manager.isRenaming(fp.getUuid())) {
             event.joinMessage(null);
@@ -319,6 +327,33 @@ public class PlayerJoinListener implements Listener {
                     createPlayerMethod.invoke(playerManager, player, true);
                     Config.debug("Re-registered bot '" + player.getName() + "' in PvPManager to prevent logout NPE.");
                 }
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static boolean isFakePlayer(Player player) {
+        if (player == null) return false;
+        try {
+            return player.getPersistentDataContainer()
+                    .has(
+                            new org.bukkit.NamespacedKey(FakePlayerPlugin.getInstance(), "fakeplayerplugin"),
+                            org.bukkit.persistence.PersistentDataType.BYTE);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private static void markEssentialsUserAsNpc(Player player) {
+        if (player == null) return;
+        org.bukkit.plugin.Plugin essPlugin = Bukkit.getPluginManager().getPlugin("Essentials");
+        if (essPlugin == null || !essPlugin.isEnabled()) return;
+        try {
+            java.lang.reflect.Method getUserMethod = essPlugin.getClass().getMethod("getUser", Player.class);
+            Object essUser = getUserMethod.invoke(essPlugin, player);
+            if (essUser != null) {
+                java.lang.reflect.Method setNpcMethod = essUser.getClass().getMethod("setNPC", boolean.class);
+                setNpcMethod.invoke(essUser, true);
             }
         } catch (Throwable ignored) {
         }

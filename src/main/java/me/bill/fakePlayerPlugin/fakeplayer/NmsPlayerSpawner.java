@@ -1770,8 +1770,25 @@ public final class NmsPlayerSpawner {
     private static void prepareJoinCompatibility(Object conn, Object serverPlayer, UUID uuid, String name) {
         Player bukkitPlayer = resolveBukkitPlayer(serverPlayer);
         markFakePlayerMetadata(bukkitPlayer);
+        markEssentialsUserAsNpc(bukkitPlayer);
         preLoadLuckPermsUser(bukkitPlayer, uuid, name);
         registerPacketEventsUser(conn, bukkitPlayer, uuid, name);
+    }
+
+    private static void markEssentialsUserAsNpc(Player player) {
+        if (player == null) return;
+        Plugin essPlugin = Bukkit.getPluginManager().getPlugin("Essentials");
+        if (essPlugin == null || !essPlugin.isEnabled()) return;
+        try {
+            Method getUserMethod = essPlugin.getClass().getMethod("getUser", Player.class);
+            Object essUser = getUserMethod.invoke(essPlugin, player);
+            if (essUser != null) {
+                Method setNpcMethod = essUser.getClass().getMethod("setNPC", boolean.class);
+                setNpcMethod.invoke(essUser, true);
+                FppLogger.debug("NmsPlayerSpawner: marked Essentials user as NPC for " + player.getName());
+            }
+        } catch (Throwable ignored) {
+        }
     }
 
     private static Player resolveBukkitPlayer(Object serverPlayer) {
