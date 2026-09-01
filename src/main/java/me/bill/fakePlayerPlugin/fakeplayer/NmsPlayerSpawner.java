@@ -1809,6 +1809,15 @@ public final class NmsPlayerSpawner {
             Object userManager = api.getClass().getMethod("getUserManager").invoke(api);
             if (userManager == null) return;
 
+            try {
+                Method getHouseKeeper = userManager.getClass().getMethod("getHouseKeeper");
+                Object houseKeeper = getHouseKeeper.invoke(userManager);
+                if (houseKeeper != null) {
+                    Method registerUsage = houseKeeper.getClass().getMethod("registerUsage", UUID.class);
+                    registerUsage.invoke(houseKeeper, uuid);
+                }
+            } catch (Throwable ignored) {}
+
             Object future;
             if (name != null && !name.isBlank()) {
                 try {

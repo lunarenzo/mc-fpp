@@ -70,8 +70,15 @@ public class PlayerJoinListener implements Listener {
             event.joinMessage(null);
         }
 
+        boolean isFirstJoin = !event.getPlayer().hasPlayedBefore() && (event.getPlayer().getFirstPlayed() == 0L);
+
         if (event.getPlayer().getFirstPlayed() != 0L) {
             forceHasPlayedBefore(event.getPlayer());
+        }
+
+        if (isFirstJoin && Config.joinMessage()) {
+            Player p = event.getPlayer();
+            FppScheduler.runSyncDelayed(plugin, () -> triggerEssentialsNewbieWelcome(p), 2L);
         }
     }
 
@@ -341,6 +348,46 @@ public class PlayerJoinListener implements Listener {
                             org.bukkit.persistence.PersistentDataType.BYTE);
         } catch (Throwable t) {
             return false;
+        }
+    }
+
+    private static void triggerEssentialsNewbieWelcome(Player player) {
+        if (player == null || !player.isOnline()) return;
+        org.bukkit.plugin.Plugin essPlugin = Bukkit.getPluginManager().getPlugin("Essentials");
+        if (essPlugin == null || !essPlugin.isEnabled()) return;
+        try {
+            java.lang.reflect.Method getSettingsMethod = essPlugin.getClass().getMethod("getSettings");
+            Object settings = getSettingsMethod.invoke(essPlugin);
+            if (settings != null) {
+                java.lang.reflect.Method getAnnounceNewPlayers = settings.getClass().getMethod("getAnnounceNewPlayers");
+                boolean announce = (boolean) getAnnounceNewPlayers.invoke(settings);
+                if (announce) {
+                    java.lang.reflect.Method getFormatMethod = settings.getClass().getMethod("getAnnounceNewPlayerFormat");
+                    Object formatText = getFormatMethod.invoke(settings);
+                    if (formatText != null) {
+                        java.lang.reflect.Method getUserMethod = essPlugin.getClass().getMethod("getUser", Player.class);
+                        Object essUser = getUserMethod.invoke(essPlugin, player);
+                        if (essUser != null) {
+                            Class<?> replacerClass = Class.forName("com.earth2me.essentials.KeywordReplacer");
+                            java.lang.reflect.Constructor<?> ctor = replacerClass.getConstructor(
+                                    formatText.getClass().getInterfaces()[0],
+                                    Class.forName("com.earth2me.essentials.CommandSource"),
+                                    essPlugin.getClass());
+                            java.lang.reflect.Method getSourceMethod = essUser.getClass().getMethod("getSource");
+                            Object source = getSourceMethod.invoke(essUser);
+                            Object replacer = ctor.newInstance(formatText, source, essPlugin);
+                            java.lang.reflect.Method getLinesMethod = replacer.getClass().getMethod("getLines");
+                            @SuppressWarnings("unchecked")
+                            Iterable<String> lines = (Iterable<String>) getLinesMethod.invoke(replacer);
+                            java.lang.reflect.Method broadcastMethod = essPlugin.getClass().getMethod("broadcastMessage", essUser.getClass().getInterfaces()[0], String.class);
+                            for (String line : lines) {
+                                broadcastMethod.invoke(essPlugin, essUser, line);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
         }
     }
 }
