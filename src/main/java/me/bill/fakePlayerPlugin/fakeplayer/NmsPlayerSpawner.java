@@ -1789,7 +1789,8 @@ public final class NmsPlayerSpawner {
             Bukkit.getPluginManager().callEvent(loginEvent);
             FppLogger.debug("NmsPlayerSpawner: dispatched AsyncPlayerPreLoginEvent & PlayerLoginEvent for " + name);
         } catch (Throwable t) {
-            FppLogger.debug("NmsPlayerSpawner: login lifecycle event dispatch skipped for " + name + ": " + t.getMessage());
+            FppLogger.debug(
+                    "NmsPlayerSpawner: login lifecycle event dispatch skipped for " + name + ": " + t.getMessage());
         }
     }
 
