@@ -1769,7 +1769,7 @@ public final class NmsPlayerSpawner {
     private static void prepareJoinCompatibility(Object conn, Object serverPlayer, UUID uuid, String name) {
         Player bukkitPlayer = resolveBukkitPlayer(serverPlayer);
         markFakePlayerMetadata(bukkitPlayer);
-        preLoadLuckPermsUser(uuid);
+        preLoadLuckPermsUser(uuid, name);
         registerPacketEventsUser(conn, bukkitPlayer, uuid, name);
     }
 
@@ -1784,21 +1784,19 @@ public final class NmsPlayerSpawner {
         }
     }
 
-    private static void markFakePlayerMetadata(Player player) {
-        Plugin plugin = FakePlayerPlugin.getInstance();
-        if (plugin == null || player == null) return;
+    private static void markFakePlayerMetadata(Player bukkitPlayer) {
+        if (bukkitPlayer == null) return;
         try {
-            player.getPersistentDataContainer().remove(new NamespacedKey(plugin, "npc"));
-            player.getPersistentDataContainer()
-                    .set(new NamespacedKey(plugin, "fpp"), PersistentDataType.BYTE, (byte) 1);
-            player.getPersistentDataContainer()
+            Plugin plugin = FakePlayerPlugin.getInstance();
+            bukkitPlayer
+                    .getPersistentDataContainer()
                     .set(new NamespacedKey(plugin, "fakeplayerplugin"), PersistentDataType.BYTE, (byte) 1);
         } catch (Throwable t) {
             FppLogger.debug("NmsPlayerSpawner: fake-player metadata failed: " + t.getMessage());
         }
     }
 
-    private static void preLoadLuckPermsUser(UUID uuid) {
+    private static void preLoadLuckPermsUser(UUID uuid, String name) {
         if (uuid == null) return;
         Plugin lpPlugin = Bukkit.getPluginManager().getPlugin("LuckPerms");
         if (lpPlugin == null || !lpPlugin.isEnabled()) return;
@@ -1810,8 +1808,14 @@ public final class NmsPlayerSpawner {
             Object userManager = api.getClass().getMethod("getUserManager").invoke(api);
             if (userManager == null) return;
 
-            Object future =
-                    userManager.getClass().getMethod("loadUser", UUID.class).invoke(userManager, uuid);
+            Object future;
+            if (name != null && !name.isBlank()) {
+                Method loadUserWithName = userManager.getClass().getMethod("loadUser", UUID.class, String.class);
+                future = loadUserWithName.invoke(userManager, uuid, name);
+            } else {
+                Method loadUserUuidOnly = userManager.getClass().getMethod("loadUser", UUID.class);
+                future = loadUserUuidOnly.invoke(userManager, uuid);
+            }
             if (future == null) return;
 
             // If already cached we are done.
