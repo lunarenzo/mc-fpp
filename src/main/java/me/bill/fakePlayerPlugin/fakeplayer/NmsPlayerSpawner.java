@@ -469,7 +469,7 @@ public final class NmsPlayerSpawner {
             }
 
             Location requested = new Location(world, x, y, z, yaw, pitch);
-            Object conn = createFakeConnection();
+            Object conn = createFakeConnection(uuid);
             if (conn == null) {
                 FppLogger.warn("NmsPlayerSpawner: failed to create fake connection for " + name);
                 return null;
@@ -992,7 +992,7 @@ public final class NmsPlayerSpawner {
             }
             if (networkConn == null) {
 
-                networkConn = createFakeConnection();
+                networkConn = createFakeConnection(bot.getUniqueId());
             }
             if (networkConn == null) {
                 FppLogger.warn("NmsPlayerSpawner.reInjectFakeListener: cannot get connection for " + bot.getName());
@@ -1439,10 +1439,11 @@ public final class NmsPlayerSpawner {
         }
     }
 
-    private static Object createFakeConnection() {
+    private static Object createFakeConnection(UUID uuid) {
         try {
-            FakeConnection conn = new FakeConnection(InetAddress.getLoopbackAddress());
-            FppLogger.debug("NmsPlayerSpawner: FakeConnection created (direct Connection subclass)");
+            InetAddress address = generateRandomPublicIp(uuid);
+            FakeConnection conn = new FakeConnection(address);
+            FppLogger.debug("NmsPlayerSpawner: FakeConnection created for " + uuid + " (" + address.getHostAddress() + ")");
             return conn;
 
         } catch (Exception e) {
