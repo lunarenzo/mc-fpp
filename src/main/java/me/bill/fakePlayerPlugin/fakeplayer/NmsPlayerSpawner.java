@@ -510,6 +510,10 @@ public final class NmsPlayerSpawner {
                 firstTickSet.add(uuid);
                 refreshAfterTeleport(result);
                 preLoadLuckPermsUser(result, uuid, name);
+                FppScheduler.runSyncLater(
+                        FakePlayerPlugin.getInstance(),
+                        () -> invalidateEssentialsPermissionCache(uuid),
+                        2L);
                 FppLogger.debug("NmsPlayerSpawner: spawned " + name + " (" + uuid + ")");
                 return result;
             }
