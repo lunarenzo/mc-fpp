@@ -1,6 +1,8 @@
 package me.bill.fakePlayerPlugin.listener;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -11,6 +13,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.plugin.Plugin;
 
 import me.bill.fakePlayerPlugin.FakePlayerPlugin;
 import me.bill.fakePlayerPlugin.config.Config;
@@ -354,38 +357,33 @@ public class PlayerJoinListener implements Listener {
 
     private static void triggerEssentialsNewbieWelcome(Player player) {
         if (player == null || !player.isOnline()) return;
-        org.bukkit.plugin.Plugin essPlugin = Bukkit.getPluginManager().getPlugin("Essentials");
+        Plugin essPlugin = Bukkit.getPluginManager().getPlugin("Essentials");
         if (essPlugin == null || !essPlugin.isEnabled()) return;
         try {
-            java.lang.reflect.Method getSettingsMethod = essPlugin.getClass().getMethod("getSettings");
+            Method getSettingsMethod = essPlugin.getClass().getMethod("getSettings");
             Object settings = getSettingsMethod.invoke(essPlugin);
             if (settings != null) {
-                java.lang.reflect.Method getAnnounceNewPlayers =
-                        settings.getClass().getMethod("getAnnounceNewPlayers");
+                Method getAnnounceNewPlayers = settings.getClass().getMethod("getAnnounceNewPlayers");
                 boolean announce = (boolean) getAnnounceNewPlayers.invoke(settings);
                 if (announce) {
-                    java.lang.reflect.Method getFormatMethod =
-                            settings.getClass().getMethod("getAnnounceNewPlayerFormat");
+                    Method getFormatMethod = settings.getClass().getMethod("getAnnounceNewPlayerFormat");
                     Object formatText = getFormatMethod.invoke(settings);
                     if (formatText != null) {
-                        java.lang.reflect.Method getUserMethod =
-                                essPlugin.getClass().getMethod("getUser", Player.class);
+                        Method getUserMethod = essPlugin.getClass().getMethod("getUser", Player.class);
                         Object essUser = getUserMethod.invoke(essPlugin, player);
                         if (essUser != null) {
                             Class<?> replacerClass = Class.forName("com.earth2me.essentials.KeywordReplacer");
-                            java.lang.reflect.Constructor<?> ctor = replacerClass.getConstructor(
+                            Constructor<?> ctor = replacerClass.getConstructor(
                                     formatText.getClass().getInterfaces()[0],
                                     Class.forName("com.earth2me.essentials.CommandSource"),
                                     essPlugin.getClass());
-                            java.lang.reflect.Method getSourceMethod =
-                                    essUser.getClass().getMethod("getSource");
+                            Method getSourceMethod = essUser.getClass().getMethod("getSource");
                             Object source = getSourceMethod.invoke(essUser);
                             Object replacer = ctor.newInstance(formatText, source, essPlugin);
-                            java.lang.reflect.Method getLinesMethod =
-                                    replacer.getClass().getMethod("getLines");
+                            Method getLinesMethod = replacer.getClass().getMethod("getLines");
                             @SuppressWarnings("unchecked")
                             Iterable<String> lines = (Iterable<String>) getLinesMethod.invoke(replacer);
-                            java.lang.reflect.Method broadcastMethod = essPlugin
+                            Method broadcastMethod = essPlugin
                                     .getClass()
                                     .getMethod(
                                             "broadcastMessage",

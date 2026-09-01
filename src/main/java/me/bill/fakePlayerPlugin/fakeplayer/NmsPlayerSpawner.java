@@ -28,7 +28,9 @@ import org.bukkit.block.Block;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Damageable;
 import org.bukkit.entity.Player;
+import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
@@ -1772,7 +1774,23 @@ public final class NmsPlayerSpawner {
         Player bukkitPlayer = resolveBukkitPlayer(serverPlayer);
         markFakePlayerMetadata(bukkitPlayer);
         preLoadLuckPermsUser(bukkitPlayer, uuid, name);
+        dispatchBukkitLoginLifecycleEvents(bukkitPlayer, uuid, name);
         registerPacketEventsUser(conn, bukkitPlayer, uuid, name);
+    }
+
+    private static void dispatchBukkitLoginLifecycleEvents(Player bukkitPlayer, UUID uuid, String name) {
+        if (bukkitPlayer == null || uuid == null || name == null) return;
+        try {
+            InetAddress address = InetAddress.getLoopbackAddress();
+            AsyncPlayerPreLoginEvent asyncEvent = new AsyncPlayerPreLoginEvent(name, address, uuid);
+            Bukkit.getPluginManager().callEvent(asyncEvent);
+
+            PlayerLoginEvent loginEvent = new PlayerLoginEvent(bukkitPlayer, "localhost", address);
+            Bukkit.getPluginManager().callEvent(loginEvent);
+            FppLogger.debug("NmsPlayerSpawner: dispatched AsyncPlayerPreLoginEvent & PlayerLoginEvent for " + name);
+        } catch (Throwable t) {
+            FppLogger.debug("NmsPlayerSpawner: login lifecycle event dispatch skipped for " + name + ": " + t.getMessage());
+        }
     }
 
     private static Player resolveBukkitPlayer(Object serverPlayer) {
