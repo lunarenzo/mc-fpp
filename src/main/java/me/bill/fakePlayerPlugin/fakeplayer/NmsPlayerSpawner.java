@@ -1892,7 +1892,8 @@ public final class NmsPlayerSpawner {
                     Method invalidateMethod = cachedData.getClass().getMethod("invalidate");
                     invalidateMethod.invoke(cachedData);
                 }
-            } catch (Throwable ignored) {}
+            } catch (Throwable ignored) {
+            }
 
             Method getContextManager = lpPlugin.getClass().getMethod("getContextManager");
             Object contextManager = getContextManager.invoke(lpPlugin);
