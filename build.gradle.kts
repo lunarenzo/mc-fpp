@@ -20,7 +20,26 @@ tasks.compileJava {
 }
 
 group = "me.bill.fpp"
-version = "1.6.6.12.8"
+
+val baseVersion = "1.6.6.12.8"
+val buildNumber = System.getenv("GITHUB_RUN_NUMBER")
+val gitCommit = System.getenv("GIT_COMMIT_HASH")?.take(7)
+
+version = when {
+    buildNumber != null && gitCommit != null -> "$baseVersion-dev+b$buildNumber.$gitCommit"
+    buildNumber != null -> "$baseVersion-dev+b$buildNumber"
+    gitCommit != null -> "$baseVersion-dev+$gitCommit"
+    else -> "$baseVersion-dev-local"
+}
+
+tasks.processResources {
+    val props = mapOf("version" to project.version)
+    inputs.properties(props)
+    filteringCharset = "UTF-8"
+    filesMatching("plugin.yml") {
+        expand(props)
+    }
+}
 
 repositories {
     mavenCentral()

@@ -49,6 +49,8 @@ jobs:
         run: ./gradlew test
 
       - name: Build Fat Shadow JAR
+        env:
+          GIT_COMMIT_HASH: ${{ github.sha }}
         run: ./gradlew shadowJar
 
       - name: Locate Shadow JAR
