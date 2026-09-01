@@ -340,7 +340,7 @@ public final class BotIdentityCache {
         if (cached != null) return cached;
 
         UUID offlineUuid = offlineModeUuid(botName);
-        if (!isPotentialPremiumName(botName)) {
+        if (!Bukkit.getOnlineMode() || !isPotentialPremiumName(botName)) {
             IdentityResolution result = new IdentityResolution(offlineUuid, true);
             resolvedCache.put(key, result);
             return result;

@@ -115,7 +115,9 @@ public final class FakePlayerBody {
     }
 
     private static boolean shouldLoadSavedPlayerData(FakePlayer fp) {
-        return fp != null && Boolean.TRUE.equals(fp.getMetadata("fpp.explicit-uuid-spawn"));
+        if (fp == null) return false;
+        if (Boolean.TRUE.equals(fp.getMetadata("fpp.explicit-uuid-spawn"))) return true;
+        return Config.persistOnRestart() || fp.isRestoredSpawn();
     }
 
     private static void finalizeSpawnedBody(FakePlayer fp, Player player) {
