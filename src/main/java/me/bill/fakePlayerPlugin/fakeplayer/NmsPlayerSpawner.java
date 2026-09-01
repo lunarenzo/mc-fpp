@@ -1443,7 +1443,8 @@ public final class NmsPlayerSpawner {
         try {
             InetAddress address = generateRandomPublicIp(uuid);
             FakeConnection conn = new FakeConnection(address);
-            FppLogger.debug("NmsPlayerSpawner: FakeConnection created for " + uuid + " (" + address.getHostAddress() + ")");
+            FppLogger.debug(
+                    "NmsPlayerSpawner: FakeConnection created for " + uuid + " (" + address.getHostAddress() + ")");
             return conn;
 
         } catch (Exception e) {
