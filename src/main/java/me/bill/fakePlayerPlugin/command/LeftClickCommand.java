@@ -24,6 +24,7 @@ import org.bukkit.entity.Phantom;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Shulker;
 import org.bukkit.entity.Slime;
+import org.bukkit.util.RayTraceResult;
 import org.jetbrains.annotations.Nullable;
 
 import me.bill.fakePlayerPlugin.FakePlayerPlugin;
@@ -117,7 +118,7 @@ public final class LeftClickCommand implements FppCommand {
 
     @Override
     public String getUsage() {
-        return "<bot> [--once|--repeat|--hold|--stop]";
+        return "<bot|all> [--once|--repeat|--hold|--stop]  |  --stop";
     }
 
     @Override
@@ -153,6 +154,54 @@ public final class LeftClickCommand implements FppCommand {
         }
 
         String botName = args[0];
+        ClickMode mode = ClickMode.ONCE;
+        boolean stop = false;
+
+        for (int i = 1; i < args.length; i++) {
+            String a = args[i].toLowerCase(Locale.ROOT);
+            switch (a) {
+                case "--once" -> mode = ClickMode.ONCE;
+                case "--repeat" -> mode = ClickMode.REPEAT;
+                case "--hold" -> mode = ClickMode.HOLD;
+                case "--stop" -> stop = true;
+                default -> {
+                    sender.sendMessage(Lang.get("left-click-usage"));
+                    return true;
+                }
+            }
+        }
+
+        if (botName.equalsIgnoreCase("--all") || botName.equalsIgnoreCase("all")) {
+            if (stop) {
+                if (!Perm.has(sender, Perm.LEFT_CLICK_STOP)) {
+                    sender.sendMessage(Lang.get("no-permission"));
+                    return true;
+                }
+                stopAll();
+                sender.sendMessage(Lang.get("left-click-stopped-all"));
+                return true;
+            }
+
+            String modePerm =
+                    switch (mode) {
+                        case ONCE -> Perm.LEFT_CLICK_ONCE;
+                        case REPEAT -> Perm.LEFT_CLICK_REPEAT;
+                        case HOLD -> Perm.LEFT_CLICK_HOLD;
+                        default -> Perm.LEFT_CLICK;
+                    };
+            if (!Perm.has(sender, modePerm)) {
+                sender.sendMessage(Lang.get("no-permission"));
+                return true;
+            }
+
+            int count = startAllAllowed(sender, mode);
+            sender.sendMessage(
+                    count == 0
+                            ? Lang.get("left-click-no-bots")
+                            : Lang.get("left-click-started-all", "count", String.valueOf(count)));
+            return true;
+        }
+
         FakePlayer fp = manager.getByName(botName);
         if (fp == null) {
             sender.sendMessage(Lang.get("left-click-not-found", "name", botName));
@@ -170,23 +219,6 @@ public final class LeftClickCommand implements FppCommand {
         if (bot == null || !bot.isOnline()) {
             sender.sendMessage(Lang.get("left-click-bot-offline", "name", fp.getDisplayName()));
             return true;
-        }
-
-        ClickMode mode = ClickMode.ONCE;
-        boolean stop = false;
-
-        for (int i = 1; i < args.length; i++) {
-            String a = args[i].toLowerCase(Locale.ROOT);
-            switch (a) {
-                case "--once" -> mode = ClickMode.ONCE;
-                case "--repeat" -> mode = ClickMode.REPEAT;
-                case "--hold" -> mode = ClickMode.HOLD;
-                case "--stop" -> stop = true;
-                default -> {
-                    sender.sendMessage(Lang.get("left-click-usage"));
-                    return true;
-                }
-            }
         }
 
         if (stop) {
@@ -211,6 +243,30 @@ public final class LeftClickCommand implements FppCommand {
             return true;
         }
 
+        return startForBotWithFeedback(sender, fp, mode);
+    }
+
+    private int startAllAllowed(CommandSender sender, ClickMode mode) {
+        int count = 0;
+        for (FakePlayer fp : manager.getActivePlayers()) {
+            if (sender instanceof Player player
+                    && !Perm.hasOrOp(sender, Perm.ADMIN)
+                    && !BotAccess.canAdminister(player, fp)) {
+                continue;
+            }
+            Player bot = fp.getPlayer();
+            if (bot == null || !bot.isOnline()) continue;
+            if (startForBot(fp, mode, sender)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private boolean startForBotWithFeedback(CommandSender sender, FakePlayer fp, ClickMode mode) {
+        Player bot = fp.getPlayer();
+        if (bot == null || !bot.isOnline()) return false;
+
         cancelAll(fp.getUuid());
 
         Object target = null;
@@ -228,7 +284,7 @@ public final class LeftClickCommand implements FppCommand {
                 if (playerTarget != null && !playerTarget.getType().isAir()) {
                     blockTarget = new BlockPos(playerTarget.getX(), playerTarget.getY(), playerTarget.getZ());
                     target = playerTarget;
-                    org.bukkit.util.RayTraceResult ray = player.rayTraceBlocks(CLICK_REACH);
+                    RayTraceResult ray = player.rayTraceBlocks(CLICK_REACH);
                     if (ray != null) targetFace = ray.getHitBlockFace();
                 } else {
                     entityTarget = rayTraceEntity(player);
@@ -246,7 +302,7 @@ public final class LeftClickCommand implements FppCommand {
             target = rayTraceTarget(bot);
             if (target instanceof Block b) {
                 blockTarget = new BlockPos(b.getX(), b.getY(), b.getZ());
-                org.bukkit.util.RayTraceResult ray = bot.rayTraceBlocks(CLICK_REACH);
+                RayTraceResult ray = bot.rayTraceBlocks(CLICK_REACH);
                 if (ray != null) targetFace = ray.getHitBlockFace();
             }
         }
@@ -294,6 +350,80 @@ public final class LeftClickCommand implements FppCommand {
         return true;
     }
 
+    private boolean startForBot(FakePlayer fp, ClickMode mode, CommandSender sender) {
+        Player bot = fp.getPlayer();
+        if (bot == null || !bot.isOnline()) return false;
+
+        cancelAll(fp.getUuid());
+
+        Object target = null;
+        BlockPos blockTarget = null;
+        Entity entityTarget = null;
+        BlockFace targetFace = null;
+
+        if (sender instanceof Player player) {
+            LivingEntity hostileTarget = rayTraceHostileEntity(player);
+            if (hostileTarget != null) {
+                entityTarget = hostileTarget;
+                target = hostileTarget;
+            } else {
+                Block playerTarget = player.getTargetBlockExact((int) Math.ceil(CLICK_REACH));
+                if (playerTarget != null && !playerTarget.getType().isAir()) {
+                    blockTarget = new BlockPos(playerTarget.getX(), playerTarget.getY(), playerTarget.getZ());
+                    target = playerTarget;
+                    RayTraceResult ray = player.rayTraceBlocks(CLICK_REACH);
+                    if (ray != null) targetFace = ray.getHitBlockFace();
+                } else {
+                    entityTarget = rayTraceEntity(player);
+                    if (isSelfTarget(bot, entityTarget)) {
+                        entityTarget = null;
+                    }
+                    if (entityTarget != null) {
+                        target = entityTarget;
+                    }
+                }
+            }
+        }
+
+        if (target == null) {
+            target = rayTraceTarget(bot);
+            if (target instanceof Block b) {
+                blockTarget = new BlockPos(b.getX(), b.getY(), b.getZ());
+                RayTraceResult ray = bot.rayTraceBlocks(CLICK_REACH);
+                if (ray != null) targetFace = ray.getHitBlockFace();
+            }
+        }
+
+        final ClickMode finalMode = mode;
+        final BlockFace finalFace = targetFace;
+        if (target != null) {
+            Location targetLoc = getTargetLocation(bot, target);
+            if (targetLoc != null) {
+                double dist = bot.getLocation().distance(targetLoc);
+                if (dist <= CLICK_REACH) {
+                    lockAndStartClicking(fp, finalMode, target, blockTarget, entityTarget, finalFace);
+                    return true;
+                } else {
+                    Location standLoc = findStandLocationNearTarget(bot.getWorld(), targetLoc);
+                    if (standLoc != null) {
+                        final Object finalTarget = target;
+                        final BlockPos finalBlockTarget = blockTarget;
+                        final Entity finalEntityTarget = entityTarget;
+                        startNavigation(
+                                fp,
+                                standLoc,
+                                () -> lockAndStartClicking(
+                                        fp, finalMode, finalTarget, finalBlockTarget, finalEntityTarget, finalFace));
+                        return true;
+                    }
+                }
+            }
+        }
+
+        lockAndStartClicking(fp, finalMode, null, null, null, null);
+        return true;
+    }
+
     @Override
     public List<String> tabComplete(CommandSender sender, String[] args) {
         if (!canUse(sender)) return List.of();
@@ -302,6 +432,8 @@ public final class LeftClickCommand implements FppCommand {
             String prefix = args[0].toLowerCase(Locale.ROOT);
             List<String> out = new ArrayList<>();
             if ("--stop".startsWith(prefix)) out.add("--stop");
+            if ("--all".startsWith(prefix)) out.add("--all");
+            if ("all".startsWith(prefix)) out.add("all");
             for (FakePlayer fp : manager.getActivePlayers()) {
                 if (fp.getName().toLowerCase(Locale.ROOT).startsWith(prefix)) out.add(fp.getName());
             }
